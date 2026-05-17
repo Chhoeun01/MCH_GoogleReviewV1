@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Maxicare Children Hospital - Live Google Review Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap");
+  :root {
+    --teal:#0f7b6c;--teal-light:#e0f5f1;--red:#d94f3d;--red-light:#fdf0ee;
+    --amber:#e07b39;--amber-light:#fef3e8;--blue:#2563a8;--blue-light:#eef4fc;
+    --text:#111827;--text-secondary:#4b5563;--text-muted:#9ca3af;
+    --bg:#f7f8fa;--card:#ffffff;--border:#e5e7eb;
+    --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+  .page{max-width:1100px;margin:0 auto;padding:36px 28px 60px}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid var(--teal)}
+  .header-left h1{font-size:22px;font-weight:600;color:var(--teal);letter-spacing:-0.3px}
+  .header-left p,.header-right p{font-size:12px;color:var(--text-muted)}
+  .header-right{text-align:right}
+  .badge{display:inline-block;font-size:11px;font-weight:600;background:var(--teal-light);color:var(--teal);padding:4px 10px;border-radius:99px;margin-bottom:5px}
+  .note{background:var(--blue-light);border:1px solid #bfdbf7;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:20px}
+  .section-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin:30px 0 12px;display:flex;align-items:center;gap:8px}
+  .section-label::after{content:"";flex:1;height:1px;background:var(--border)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .kpi-card,.card{background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow)}
+  .kpi-card{border-radius:10px;padding:14px}
+  .kpi-card.accent-teal{border-top:3px solid var(--teal)}
+  .kpi-card.accent-blue{border-top:3px solid var(--blue)}
+  .kpi-card.accent-red{border-top:3px solid var(--red)}
+  .kpi-card.accent-amber{border-top:3px solid var(--amber)}
+  .kpi-label{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+  .kpi-value{font-size:28px;font-weight:600;line-height:1;color:var(--text)}
+  .kpi-value.small{font-size:15px;line-height:1.2}
+  .green{color:var(--teal)}.red{color:var(--red)}.amber{color:var(--amber)}
+  .kpi-sub{font-size:10px;color:var(--text-muted);margin-top:4px}
+  .kpi-pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;margin-top:6px}
+  .pill-g{background:var(--teal-light);color:var(--teal)}.pill-r{background:var(--red-light);color:var(--red)}.pill-a{background:var(--amber-light);color:var(--amber)}
+  .chart-row{display:grid;gap:14px;margin-bottom:14px}
+  .col-3{grid-template-columns:1fr 1fr 1fr}.col-2{grid-template-columns:1fr 1fr}.col-1{grid-template-columns:1fr}
+  .card{border-radius:12px;padding:18px 20px}
+  .card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .card-sub{font-size:11px;color:var(--text-muted);margin-bottom:12px}
+  .stat-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .stat-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--border);color:var(--text-secondary)}
+  .stat-chip.c-teal{background:var(--teal-light);color:var(--teal);border-color:var(--teal-light)}
+  .stat-chip.c-red{background:var(--red-light);color:var(--red);border-color:var(--red-light)}
+  .stat-chip.c-amber{background:var(--amber-light);color:var(--amber);border-color:var(--amber-light)}
+  .stat-chip.c-blue{background:var(--blue-light);color:var(--blue);border-color:var(--blue-light)}
+  .monthly-table{width:100%;border-collapse:collapse;font-size:12px}
+  .monthly-table th{background:var(--teal);color:#fff;padding:9px 10px;text-align:left;font-weight:500;font-size:11px}
+  .monthly-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .yr-table{width:100%;border-collapse:collapse;font-size:12px}
+  .yr-table th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:2px solid var(--border)}
+  .yr-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+  .yr-table .yr-label{font-weight:600;color:var(--teal)}
+  .footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;gap:14px}
+  @media (max-width:900px){.kpi-grid,.col-2,.col-3{grid-template-columns:1fr 1fr}.header,.footer{flex-direction:column}.header-right{text-align:left}}
+  @media (max-width:560px){.page{padding:24px 16px 44px}.kpi-grid,.col-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>Maxicare Children Hospital</h1>
+      <p>Google Review Dashboard - Reputation, Sentiment & Monthly Analytics</p>
+    </div>
+    <div class="header-right">
+      <div class="badge">Live GitHub Snapshot</div>
+      <p id="collectedAt">Loading latest data...</p>
+      <p id="sourceLabel">Source: data/reviews.json</p>
+    </div>
+  </div>
+
+  <div class="note">This page refreshes from <strong>data/reviews.json</strong> every 60 seconds. GitHub Actions can update that file every 15 minutes after you publish the repo.</div>
+
+  <div class="section-label">KPI Summary</div>
+  <div class="kpi-grid">
+    <div class="kpi-card accent-teal"><div class="kpi-label">Overall Rating</div><div class="kpi-value" id="overallRating">-</div><div class="kpi-sub">out of 5.0</div></div>
+    <div class="kpi-card accent-blue"><div class="kpi-label">Total Reviews</div><div class="kpi-value" id="totalReviews">-</div><div class="kpi-sub">Google Business Profile</div></div>
+    <div class="kpi-card accent-teal"><div class="kpi-label">Positive</div><div class="kpi-value green" id="positiveReviews">-</div><div class="kpi-sub" id="positiveSub">visible reviews</div><div class="kpi-pill pill-g" id="positiveRate">-</div></div>
+    <div class="kpi-card accent-red"><div class="kpi-label">Negative</div><div class="kpi-value red" id="negativeReviews">-</div><div class="kpi-sub" id="negativeSub">visible reviews</div><div class="kpi-pill pill-r" id="negativeRate">-</div></div>
+    <div class="kpi-card accent-amber"><div class="kpi-label">Mixed</div><div class="kpi-value amber" id="mixedReviews">-</div><div class="kpi-sub" id="mixedSub">visible reviews</div><div class="kpi-pill pill-a" id="mixedRate">-</div></div>
+    <div class="kpi-card accent-teal"><div class="kpi-label">Top Theme</div><div class="kpi-value small" id="topTheme">-</div><div class="kpi-sub" id="topThemeSub">-</div></div>
+  </div>
+
+  <div class="section-label">Sentiment Overview</div>
+  <div class="chart-row col-2">
+    <div class="card">
+      <div class="card-title">Sentiment breakdown - donut</div>
+      <div class="card-sub">Share of visible reviews</div>
+      <div class="stat-strip" id="sentimentStats"></div>
+      <div style="position:relative;height:220px"><canvas id="donut"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sentiment count - bar</div>
+      <div class="card-sub">Absolute count by sentiment type</div>
+      <div class="stat-strip" id="sentimentCountStats"></div>
+      <div style="position:relative;height:220px"><canvas id="sentBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Theme Analysis</div>
+  <div class="chart-row col-1">
+    <div class="card">
+      <div class="card-title">Review theme frequency</div>
+      <div class="card-sub">Mentions per theme</div>
+      <div style="position:relative;height:280px"><canvas id="themeBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-row col-2">
+    <div class="card">
+      <div class="card-title">Star rating distribution</div>
+      <div class="card-sub">Based on visible reviews</div>
+      <div style="position:relative;height:210px"><canvas id="starBar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Positive vs negative by theme - area</div>
+      <div class="card-sub">Stacked comparison across categories</div>
+      <div style="position:relative;height:210px"><canvas id="areaTheme"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Retention & Loyalty Signals</div>
+  <div class="chart-row col-2">
+    <div class="card">
+      <div class="card-title">Retention & loyalty - bar</div>
+      <div class="card-sub">Key performance indicators extracted from review text</div>
+      <div style="position:relative;height:210px"><canvas id="retentionBar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Review age trend - line</div>
+      <div class="card-sub">Volume vs negative by recency bucket</div>
+      <div style="position:relative;height:210px"><canvas id="ageLine"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Yearly Comparison - 2021 to 2026</div>
+  <div class="chart-row col-3">
+    <div class="card">
+      <div class="card-title">Yearly volume - line</div>
+      <div class="card-sub">Total vs positive vs negative per year</div>
+      <div style="position:relative;height:210px"><canvas id="yearLine"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Stacked sentiment - bar</div>
+      <div class="card-sub">Breakdown by year</div>
+      <div style="position:relative;height:210px"><canvas id="yearStack"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg rating trend - line</div>
+      <div class="card-sub">Estimated average star per year</div>
+      <div style="position:relative;height:210px"><canvas id="ratingLine"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-row col-2">
+    <div class="card">
+      <div class="card-title">Negative rate % - area</div>
+      <div class="card-sub">Downward trend = improving reputation</div>
+      <div style="position:relative;height:210px"><canvas id="negRate"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Year-over-year summary table</div>
+      <div class="card-sub">Estimated from visible reviews</div>
+      <table class="yr-table">
+        <thead><tr><th>Year</th><th>Total</th><th>Pos</th><th>Neg</th><th>Neg %</th><th>Avg</th><th>Trend</th></tr></thead>
+        <tbody id="yearlyTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-label">Monthly Breakdown - Jan 2023 to May 2026</div>
+  <div class="chart-row col-1">
+    <div class="card">
+      <div class="card-title">Monthly review volume - bar + line overlay</div>
+      <div class="card-sub">Total reviews vs negative reviews</div>
+      <div style="position:relative;height:320px"><canvas id="monthCombo"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-row col-2">
+    <div class="card">
+      <div class="card-title">Monthly sentiment - stacked area</div>
+      <div class="card-sub">Positive vs negative flow Jan 2025-May 2026</div>
+      <div style="position:relative;height:220px"><canvas id="monthArea"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly negative rate % - line</div>
+      <div class="card-sub">Percentage negative per month Jan 2025-May 2026</div>
+      <div style="position:relative;height:220px"><canvas id="monthNegRate"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-label">Monthly Detail</div>
+  <div class="chart-row col-1">
+    <div class="card">
+      <div class="card-title">Monthly review table</div>
+      <div class="card-sub">Loaded from live JSON data</div>
+      <table class="monthly-table">
+        <thead><tr><th>Month</th><th>Year</th><th>Total</th><th>Positive</th><th>Mixed</th><th>Negative</th><th>Neg Rate</th><th>Avg Star</th><th>Signal</th></tr></thead>
+        <tbody id="monthlyTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Maxicare Children Hospital - Live Review Analytics Dashboard</span>
+    <span>Prepared by Dan & Maya</span>
+  </div>
+</div>
+
+<script>
+const colors = {
+  teal: "#0f7b6c",
+  red: "#d94f3d",
+  amber: "#e07b39",
+  blue: "#2563a8",
+  grid: "rgba(0,0,0,0.05)",
+  gray: "#9ca3af"
+};
+
+const FALLBACK_DATA = {
+  collectedAt: "2026-05-17T00:00:00+07:00",
+  source: "Built-in sample data. Upload to GitHub Pages or run a local server for live JSON.",
+  overallRating: 4.4,
+  totalReviews: 126,
+  visibleReviews: 30,
+  positive: 20,
+  negative: 7,
+  mixed: 3,
+  topTheme: { name: "Doctor Trust", mentions: 12 },
+  sentiment: { labels: ["Positive", "Negative", "Mixed"], values: [20, 7, 3] },
+  starDistribution: { labels: ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"], values: [5, 1, 1, 3, 20] },
+  themes: {
+    labels: ["Doctor trust", "Cleanliness", "Service/staff", "Price/billing", "Vaccination", "Child-friendly", "Clinical coord.", "Waiting/discharge", "Community"],
+    values: [12, 11, 10, 8, 5, 5, 4, 3, 1]
+  },
+  monthly: [
+    { month: "Jan", year: 2026, total: 1, positive: 1, mixed: 0, negative: 0, averageStar: 5, signal: "4-year loyalty" },
+    { month: "Feb", year: 2026, total: 0, positive: 0, mixed: 0, negative: 0, averageStar: 0, signal: "No data" },
+    { month: "Mar", year: 2026, total: 2, positive: 1, mixed: 1, negative: 0, averageStar: 4.5, signal: "Discharge issue mixed" },
+    { month: "Apr", year: 2026, total: 0, positive: 0, mixed: 0, negative: 0, averageStar: 0, signal: "No data" },
+    { month: "May", year: 2026, total: 2, positive: 2, mixed: 0, negative: 0, averageStar: 5, signal: "School CSR + Dr You" }
+  ]
+};
+
+const FULL_MONTHLY = [
+  ["Jan",2023,0,0,0,0,0,"No data"],["Feb",2023,0,0,0,0,0,"No data"],["Mar",2023,0,0,0,0,0,"No data"],["Apr",2023,0,0,0,0,0,"No data"],
+  ["May",2023,1,0,0,1,1,"Price complaint"],["Jun",2023,0,0,0,0,0,"No data"],["Jul",2023,0,0,0,0,0,"No data"],["Aug",2023,1,0,0,1,2,"Care coordination"],
+  ["Sep",2023,0,0,0,0,0,"No data"],["Oct",2023,0,0,0,0,0,"No data"],["Nov",2023,1,1,0,0,4,"Service positive"],["Dec",2023,0,0,0,0,0,"No data"],
+  ["Jan",2024,1,0,0,1,1,"Misdiagnosis complaint"],["Feb",2024,0,0,0,0,0,"No data"],["Mar",2024,1,0,1,0,3,"Hygiene + price mixed"],["Apr",2024,1,0,0,1,1,"Price concern"],
+  ["May",2024,2,2,0,0,5,"Doctor trust x2"],["Jun",2024,0,0,0,0,0,"No data"],["Jul",2024,1,1,0,0,5,"Specialist positive"],["Aug",2024,1,1,0,0,5,"Check-up positive"],
+  ["Sep",2024,1,1,0,0,5,"Quality & facilities"],["Oct",2024,0,0,0,0,0,"No data"],["Nov",2024,2,1,1,0,4.5,"Trust + price mixed"],["Dec",2024,0,0,0,0,0,"No data"],
+  ["Jan",2025,2,1,0,1,3,"Price + negative"],["Feb",2025,1,1,0,0,5,"Vaccination positive"],["Mar",2025,0,0,0,0,0,"No data"],["Apr",2025,1,1,0,0,5,"Certified doctors"],
+  ["May",2025,1,0,1,0,4,"Parking concern mixed"],["Jun",2025,1,1,0,0,5,"Inpatient praise"],["Jul",2025,0,0,0,0,0,"No data"],["Aug",2025,1,1,0,0,5,"Child-friendly vaccination"],
+  ["Sep",2025,2,1,0,1,3,"Antibiotic concern"],["Oct",2025,1,1,0,0,5,"Treatment outcome"],["Nov",2025,2,2,0,0,5,"Compassionate care x2"],["Dec",2025,1,1,0,0,5,"Family loyalty"],
+  ["Jan",2026,1,1,0,0,5,"4-year loyalty"],["Feb",2026,0,0,0,0,0,"No data"],["Mar",2026,2,1,1,0,4.5,"Discharge issue mixed"],["Apr",2026,0,0,0,0,0,"No data"],["May",2026,2,2,0,0,5,"School CSR + Dr You"]
+].map(([month, year, total, positive, mixed, negative, averageStar, signal]) => ({ month, year, total, positive, mixed, negative, averageStar, signal }));
+
+const REPORT_SERIES = {
+  areaThemeLabels: ["Doctor", "Cleanliness", "Price", "Vaccination", "Clinical"],
+  areaThemePositive: [10, 9, 1, 5, 0],
+  areaThemeNegative: [3, 2, 7, 0, 4],
+  retentionLabels: ["Doctor name trust", "Return visitors", "Family referrals", "Long-term 4+ yr", "CSR mentions"],
+  retentionValues: [5, 3, 2, 1, 1],
+  ageLabels: ["Last month", "2-3 mo", "5-8 mo", "10-12 mo", "1-2 yr", "5 yr"],
+  ageTotal: [5, 4, 7, 5, 5, 2],
+  ageNegative: [0, 1, 0, 1, 4, 1],
+  yearLabels: ["2021", "2023", "2024", "2025", "2026 YTD"],
+  yearTotal: [2, 3, 9, 13, 5],
+  yearPositive: [2, 1, 5, 10, 4],
+  yearMixed: [0, 0, 1, 0, 1],
+  yearNegative: [0, 2, 3, 3, 0],
+  ratingTrend: [5.0, 2.7, 3.9, 4.2, 4.8],
+  negRate: [0, 67, 33, 23, 0],
+  yearRows: [
+    ["2021",2,2,0,0,5.0,"Early loyalty"],
+    ["2023",3,1,2,67,2.7,"High risk"],
+    ["2024",9,5,3,33,3.9,"Improving"],
+    ["2025",13,10,3,23,4.2,"Strong growth"],
+    ["2026 YTD",5,4,0,0,4.8,"Best period"]
+  ]
+};
+
+const charts = {};
+
+function normalizeData(data) {
+  return {
+    ...FALLBACK_DATA,
+    ...data,
+    topTheme: data.topTheme || FALLBACK_DATA.topTheme,
+    sentiment: data.sentiment || FALLBACK_DATA.sentiment,
+    starDistribution: data.starDistribution || FALLBACK_DATA.starDistribution,
+    themes: data.themes || FALLBACK_DATA.themes,
+    monthly: data.monthly && data.monthly.length >= 41 ? data.monthly : FULL_MONTHLY
+  };
+}
+
+function percent(value, total) {
+  return total > 0 ? `${Math.round((value / total) * 1000) / 10}%` : "0%";
+}
+
+function formatDate(value) {
+  if (!value) return "No collection date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+async function loadDashboardData() {
+  const response = await fetch(`data/reviews.json?t=${Date.now()}`);
+  if (!response.ok) throw new Error("Cannot load data/reviews.json");
+  return response.json();
+}
+
+function setText(id, value) {
+  document.getElementById(id).textContent = value;
+}
+
+function renderKpis(data) {
+  const visible = data.visibleReviews || data.positive + data.negative + data.mixed;
+  setText("overallRating", Number(data.overallRating).toFixed(1));
+  setText("totalReviews", data.totalReviews);
+  setText("positiveReviews", data.positive);
+  setText("negativeReviews", data.negative);
+  setText("mixedReviews", data.mixed);
+  setText("positiveSub", `of ${visible} visible`);
+  setText("negativeSub", `of ${visible} visible`);
+  setText("mixedSub", `of ${visible} visible`);
+  setText("positiveRate", percent(data.positive, visible));
+  setText("negativeRate", percent(data.negative, visible));
+  setText("mixedRate", percent(data.mixed, visible));
+  setText("topTheme", data.topTheme?.name || "-");
+  setText("topThemeSub", `${data.topTheme?.mentions || 0} mentions`);
+  setText("collectedAt", `Collected: ${formatDate(data.collectedAt)} · ${data.totalReviews} total reviews`);
+  setText("sourceLabel", `Source: ${data.source || "data/reviews.json"}`);
+
+  document.getElementById("sentimentStats").innerHTML = `
+    <span class="stat-chip c-teal">Positive: ${data.positive}</span>
+    <span class="stat-chip c-red">Negative: ${data.negative}</span>
+    <span class="stat-chip c-amber">Mixed: ${data.mixed}</span>
+  `;
+  document.getElementById("sentimentCountStats").innerHTML = `
+    <span class="stat-chip">Total visible: ${visible} reviews</span>
+    <span class="stat-chip c-teal">Pos ${data.positive}</span>
+    <span class="stat-chip c-red">Neg ${data.negative}</span>
+    <span class="stat-chip c-amber">Mix ${data.mixed}</span>
+  `;
+}
+
+function upsertChart(id, config) {
+  if (!window.Chart) return;
+
+  if (charts[id]) {
+    charts[id].data = config.data;
+    charts[id].options = config.options;
+    charts[id].update();
+    return;
+  }
+  charts[id] = new Chart(document.getElementById(id), config);
+}
+
+function lineOptions(max, min = 0, suffix = "") {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: colors.gray, font: { size: 10 }, maxRotation: 55, minRotation: 0 } },
+      y: { min, max, grid: { color: colors.grid }, ticks: { color: colors.gray, font: { size: 10 }, callback: (value) => `${value}${suffix}` } }
+    }
+  };
+}
+
+function barOptions(max) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: colors.gray, font: { size: 9 }, maxRotation: 20 } },
+      y: { max, beginAtZero: true, grid: { color: colors.grid }, ticks: { color: colors.gray, font: { size: 10 } } }
+    }
+  };
+}
+
+function stackedOptions(max) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { color: colors.gray, font: { size: 10 } } },
+      y: { stacked: true, max, beginAtZero: true, grid: { color: colors.grid }, ticks: { color: colors.gray, font: { size: 10 } } }
+    }
+  };
+}
+
+function renderCharts(data) {
+  if (!window.Chart) {
+    setText("sourceLabel", "Chart.js could not load. Connect internet or upload to GitHub Pages.");
+    return;
+  }
+
+  upsertChart("donut", {
+    type: "doughnut",
+    data: {
+      labels: data.sentiment.labels,
+      datasets: [{ data: data.sentiment.values, backgroundColor: [colors.teal, colors.red, colors.amber], borderWidth: 3, borderColor: "#fff" }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { position: "bottom" } } }
+  });
+
+  upsertChart("sentBar", {
+    type: "bar",
+    data: {
+      labels: data.sentiment.labels,
+      datasets: [{ data: data.sentiment.values, backgroundColor: [colors.teal, colors.red, colors.amber], borderRadius: 6 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false }, ticks: { color: colors.gray } }, y: { grid: { color: colors.grid }, beginAtZero: true, ticks: { color: colors.gray } } }
+    }
+  });
+
+  upsertChart("starBar", {
+    type: "bar",
+    data: {
+      labels: data.starDistribution.labels,
+      datasets: [{ data: data.starDistribution.values, backgroundColor: [colors.red, colors.amber, colors.amber, colors.blue, colors.teal], borderRadius: 6 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false }, ticks: { color: colors.gray } }, y: { grid: { color: colors.grid }, beginAtZero: true, ticks: { color: colors.gray } } }
+    }
+  });
+
+  upsertChart("themeBar", {
+    type: "bar",
+    data: {
+      labels: data.themes.labels,
+      datasets: [{ data: data.themes.values, backgroundColor: data.themes.values.map((_, index) => index === 3 ? colors.red : index > 3 ? colors.teal : colors.blue), borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: colors.grid }, beginAtZero: true, ticks: { color: colors.gray } }, y: { grid: { display: false }, ticks: { color: colors.gray } } }
+    }
+  });
+
+  upsertChart("areaTheme", {
+    type: "line",
+    data: {
+      labels: REPORT_SERIES.areaThemeLabels,
+      datasets: [
+        { label: "Positive", data: REPORT_SERIES.areaThemePositive, borderColor: colors.teal, backgroundColor: "rgba(15,123,108,0.12)", fill: true, tension: 0.4, pointRadius: 4 },
+        { label: "Negative", data: REPORT_SERIES.areaThemeNegative, borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.10)", fill: true, tension: 0.4, pointRadius: 4, borderDash: [5, 3] }
+      ]
+    },
+    options: lineOptions(12)
+  });
+
+  upsertChart("retentionBar", {
+    type: "bar",
+    data: { labels: REPORT_SERIES.retentionLabels, datasets: [{ data: REPORT_SERIES.retentionValues, backgroundColor: colors.teal, borderRadius: 6 }] },
+    options: barOptions(7)
+  });
+
+  upsertChart("ageLine", {
+    type: "line",
+    data: {
+      labels: REPORT_SERIES.ageLabels,
+      datasets: [
+        { label: "Total", data: REPORT_SERIES.ageTotal, borderColor: colors.blue, backgroundColor: "rgba(37,99,168,0.08)", fill: true, tension: 0.4, pointRadius: 4 },
+        { label: "Negative", data: REPORT_SERIES.ageNegative, borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.08)", fill: true, tension: 0.4, pointRadius: 4, borderDash: [5, 3] }
+      ]
+    },
+    options: lineOptions(9)
+  });
+
+  upsertChart("yearLine", {
+    type: "line",
+    data: {
+      labels: REPORT_SERIES.yearLabels,
+      datasets: [
+        { label: "Total", data: REPORT_SERIES.yearTotal, borderColor: colors.blue, backgroundColor: "rgba(37,99,168,0.08)", fill: true, tension: 0.4, pointRadius: 4 },
+        { label: "Pos", data: REPORT_SERIES.yearPositive, borderColor: colors.teal, backgroundColor: "rgba(15,123,108,0.08)", fill: true, tension: 0.4, pointRadius: 4 },
+        { label: "Neg", data: REPORT_SERIES.yearNegative, borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.08)", fill: true, tension: 0.4, pointRadius: 4, borderDash: [5, 3] }
+      ]
+    },
+    options: lineOptions(16)
+  });
+
+  upsertChart("yearStack", {
+    type: "bar",
+    data: {
+      labels: REPORT_SERIES.yearLabels,
+      datasets: [
+        { label: "Positive", data: REPORT_SERIES.yearPositive, backgroundColor: colors.teal },
+        { label: "Mixed", data: REPORT_SERIES.yearMixed, backgroundColor: colors.amber },
+        { label: "Negative", data: REPORT_SERIES.yearNegative, backgroundColor: colors.red }
+      ]
+    },
+    options: stackedOptions(16)
+  });
+
+  upsertChart("ratingLine", {
+    type: "line",
+    data: { labels: REPORT_SERIES.yearLabels, datasets: [{ data: REPORT_SERIES.ratingTrend, borderColor: colors.blue, backgroundColor: "rgba(37,99,168,0.10)", fill: true, tension: 0.4, pointRadius: 5 }] },
+    options: lineOptions(6, 1)
+  });
+
+  upsertChart("negRate", {
+    type: "line",
+    data: { labels: REPORT_SERIES.yearLabels, datasets: [{ data: REPORT_SERIES.negRate, borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.12)", fill: true, tension: 0.4, pointRadius: 5 }] },
+    options: lineOptions(90, 0, "%")
+  });
+
+  const monthLabels = data.monthly.map((row) => `${row.month} '${String(row.year).slice(2)}`);
+  const recent = data.monthly.filter((row) => row.year === 2025 || row.year === 2026);
+  const recentLabels = recent.map((row) => `${row.month} '${String(row.year).slice(2)}`);
+
+  upsertChart("monthCombo", {
+    type: "bar",
+    data: {
+      labels: monthLabels,
+      datasets: [
+        { type: "bar", label: "Total reviews", data: data.monthly.map((row) => row.total), backgroundColor: "rgba(37,99,168,0.65)", borderRadius: 3 },
+        { type: "line", label: "Negative", data: data.monthly.map((row) => row.negative), borderColor: colors.red, backgroundColor: "transparent", pointRadius: 3, tension: 0.3 }
+      ]
+    },
+    options: lineOptions(4)
+  });
+
+  upsertChart("monthArea", {
+    type: "line",
+    data: {
+      labels: recentLabels,
+      datasets: [
+        { label: "Positive", data: recent.map((row) => row.positive), borderColor: colors.teal, backgroundColor: "rgba(15,123,108,0.14)", fill: true, tension: 0.4, pointRadius: 3 },
+        { label: "Negative", data: recent.map((row) => row.negative), borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.10)", fill: true, tension: 0.4, pointRadius: 3, borderDash: [4, 3] }
+      ]
+    },
+    options: lineOptions(4)
+  });
+
+  upsertChart("monthNegRate", {
+    type: "line",
+    data: {
+      labels: recentLabels,
+      datasets: [{ data: recent.map((row) => row.total > 0 ? Math.round((row.negative / row.total) * 100) : 0), borderColor: colors.red, backgroundColor: "rgba(217,79,61,0.10)", fill: true, tension: 0.4, pointRadius: 4 }]
+    },
+    options: lineOptions(120, 0, "%")
+  });
+}
+
+function renderMonthlyTable(data) {
+  const tbody = document.getElementById("monthlyTableBody");
+  tbody.innerHTML = "";
+  data.monthly.forEach((row) => {
+    const negRate = row.total > 0 ? Math.round((row.negative / row.total) * 100) : 0;
+    const pillClass = negRate >= 50 ? "pill-r" : negRate >= 25 ? "pill-a" : "pill-g";
+    const averageStar = row.averageStar > 0 ? row.averageStar.toFixed(1) : "-";
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${row.month}</td>
+        <td>${row.year}</td>
+        <td><strong>${row.total || "-"}</strong></td>
+        <td class="green"><strong>${row.positive || (row.total ? 0 : "-")}</strong></td>
+        <td class="amber">${row.mixed || (row.total ? 0 : "-")}</td>
+        <td class="red"><strong>${row.negative || (row.total ? 0 : "-")}</strong></td>
+        <td>${row.total > 0 ? `<span class="kpi-pill ${pillClass}">${negRate}%</span>` : "-"}</td>
+        <td>${averageStar}</td>
+        <td style="color:#6b7280;font-size:11px">${row.signal}</td>
+      </tr>
+    `);
+  });
+}
+
+function renderYearlyTable() {
+  const tbody = document.getElementById("yearlyTableBody");
+  tbody.innerHTML = "";
+  REPORT_SERIES.yearRows.forEach(([year, total, positive, negative, negRate, average, trend]) => {
+    const pillClass = negRate >= 50 ? "pill-r" : negRate >= 25 ? "pill-a" : "pill-g";
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td class="yr-label">${year}</td>
+        <td>${total}</td>
+        <td>${positive}</td>
+        <td>${negative}</td>
+        <td><span class="kpi-pill ${pillClass}">${negRate}%</span></td>
+        <td>${average.toFixed(1)}</td>
+        <td>${trend}</td>
+      </tr>
+    `);
+  });
+}
+
+async function refreshDashboard() {
+  try {
+    const data = normalizeData(await loadDashboardData());
+    renderKpis(data);
+    renderCharts(data);
+    renderMonthlyTable(data);
+    renderYearlyTable();
+  } catch (error) {
+    const data = normalizeData(FALLBACK_DATA);
+    renderKpis(data);
+    renderCharts(data);
+    renderMonthlyTable(data);
+    renderYearlyTable();
+    setText("collectedAt", "Local preview: data/reviews.json is blocked by the browser. Use GitHub Pages or a local server.");
+  }
+}
+
+refreshDashboard();
+setInterval(refreshDashboard, 60000);
+</script>
+</body>
+</html>
